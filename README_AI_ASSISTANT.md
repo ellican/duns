@@ -1,4 +1,13 @@
-# AI Financial Assistant - Complete Guide
+# Hybrid AI Financial Assistant - Complete Guide
+
+## 🎯 What's New: Dual-Mode Intelligence
+
+The AI assistant now operates in **two intelligent modes**:
+
+1. **🧠 General Knowledge Mode** - Explains concepts, teaches, has natural conversations (like ChatGPT)
+2. **🧾 Database Mode** - Strictly uses your company database as the only source of truth
+
+The AI **automatically detects** which mode to use based on your question!
 
 ## Quick Start
 
@@ -29,7 +38,14 @@
 
 ### Example Questions
 
-✅ **Good Questions:**
+✅ **General Knowledge Questions:**
+- "What is gross profit?"
+- "Can you explain invoicing?"
+- "How does depreciation work?"
+- "Hello! / Hi there!"
+- "Explain the difference between revenue and profit"
+
+✅ **Database Questions:**
 - "Who is the latest person paid?"
 - "How much did we pay this week?"
 - "List top 5 clients"
@@ -40,12 +56,17 @@
 ❌ **Avoid:**
 - Requests to modify data (the assistant is read-only)
 - Very complex multi-part questions
-- Questions about data not in the database
+- Questions about data not in your database
 
 ### What You'll Get
 
 The assistant responds in **natural, conversational language**, like talking to a real person:
 
+#### General Knowledge Example:
+**You:** "What is gross profit?"
+**AI:** "Gross profit is the amount a business earns after deducting the direct costs of producing goods or services. It shows how efficiently a company produces and sells its products. For example, if you sell a product for $100 and it costs $60 to make, your gross profit is $40."
+
+#### Database Query Example:
 **You:** "Who is the latest person paid?"
 **AI:** "The latest person who was paid is John Doe."
 
@@ -54,35 +75,50 @@ The assistant responds in **natural, conversational language**, like talking to 
 
 ## Technical Architecture
 
-### Two-Stage Processing
+### Hybrid Dual-Mode Processing
 
 ```
-┌─────────────────┐
-│  User Question  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────────┐
-│ STAGE 1: SQL Generation     │
-│ AI converts question to SQL │
-└────────┬────────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│ Execute SQL (validated) │
-└────────┬────────────────┘
-         │
-         ▼
-┌──────────────────────────────────┐
-│ STAGE 2: Natural Response        │
-│ AI converts results to natural   │
-│ conversational language          │
-└────────┬─────────────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│ Return to user + log    │
-└─────────────────────────┘
+┌──────────────────────────┐
+│   User asks question     │
+└───────────┬──────────────┘
+            │
+            ▼
+┌──────────────────────────────────────┐
+│  AI analyzes with hybrid prompt      │
+└───────────┬──────────────────────────┘
+            │
+      ┌─────┴─────┐
+      │           │
+      ▼           ▼
+┌──────────┐  ┌──────────────┐
+│ General  │  │  Database    │
+│ Answer   │  │  Query       │
+│ Directly │  │              │
+└─────┬────┘  └──────┬───────┘
+      │              │
+      │              ▼
+      │         ┌─────────────────┐
+      │         │ Generate SQL    │
+      │         └────────┬────────┘
+      │                  │
+      │                  ▼
+      │         ┌──────────────────┐
+      │         │ Execute SQL      │
+      │         │ (validated)      │
+      │         └────────┬─────────┘
+      │                  │
+      │                  ▼
+      │         ┌──────────────────────┐
+      │         │ Format results       │
+      │         │ naturally            │
+      │         └────────┬─────────────┘
+      │                  │
+      └────────┬─────────┘
+               │
+               ▼
+      ┌─────────────────┐
+      │ Return to user  │
+      └─────────────────┘
 ```
 
 ### Security Features
@@ -96,11 +132,12 @@ The assistant responds in **natural, conversational language**, like talking to 
 ## Files
 
 ### Core Implementation
-- **`ai_assistant.php`** - Main backend (259 lines)
-- **`assets/js/ai-chat.js`** - Frontend chat widget
+- **`ai_assistant.php`** - Main backend with hybrid dual-mode system
+- **`assets/js/ai-chat.js`** - Frontend chat widget with updated welcome
 - **`assets/css/ai-chat.css`** - Chat styling
 
 ### Documentation
+- **`HYBRID_AI_ASSISTANT_GUIDE.md`** - Comprehensive hybrid mode guide (NEW!)
 - **`AI_CONVERSATIONAL_ASSISTANT.md`** - User guide
 - **`AI_OVERHAUL_SUMMARY.md`** - Implementation details
 - **`AI_BEFORE_AFTER_COMPARISON.md`** - What changed
