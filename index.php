@@ -346,7 +346,8 @@ $initials = strtoupper(substr($first_name, 0, 2));
                     <div class="form-group"><label class="form-label">Reg No</label><input type="text" name="reg_no" class="form-control" required></div>
                     <div class="form-group"><label class="form-label">Client Name</label><input type="text" name="client_name" class="form-control" required></div>
                     <div class="form-group"><label class="form-label">Date</label><input type="date" name="date" class="form-control" required></div>
-                    <div class="form-group"><label class="form-label">Phone</label><input type="text" name="phone_number" class="form-control" required></div>
+                    <div class="form-group"><label class="form-label">Responsible</label><input type="text" name="Responsible" class="form-control" required></div>
+                    <div class="form-group"><label class="form-label">TIN</label><input type="text" name="TIN" class="form-control" maxlength="9" pattern="[0-9]{1,9}" title="Enter up to 9 digits" placeholder="9 digits max"></div>
                     <div class="form-group"><label class="form-label">Service</label><input type="text" name="service" class="form-control" required></div>
                     <div class="form-group"><label class="form-label">Amount</label><input type="number" name="amount" class="form-control" step="0.01" required></div>
                     <div class="form-group"><label class="form-label">Currency</label><select name="currency" class="form-control form-select" required><option value="USD" selected>USD</option><option value="EUR">EUR</option><option value="RWF">RWF</option></select></div>
@@ -376,7 +377,7 @@ $initials = strtoupper(substr($first_name, 0, 2));
                     <table id="clientTable" class="enhanced-table">
                         <thead>
                             <tr>
-                                <th>#</th><th>Reg No</th><th>Client Name</th><th>Date</th><th>Phone</th><th>Service</th><th>Amount</th>
+                                <th>#</th><th>Reg No</th><th>Client Name</th><th>Date</th><th>Responsible</th><th>TIN</th><th>Service</th><th>Amount</th>
                                 <th>Currency</th><th>Paid</th><th>Due</th><th>Status</th><th>Actions</th>
                             </tr>
                         </thead>
@@ -524,7 +525,8 @@ $(document).ready(function() {
                     <td title="${client.reg_no}"><div class="truncate" style="max-width: 10ch;">${client.reg_no}</div></td>
                     <td title="${client.client_name}"><div class="truncate" style="max-width: 25ch;">${client.client_name}</div></td>
                     <td>${client.date}</td>
-                    <td>${client.phone_number}</td>
+                    <td>${client.Responsible || client.phone_number || ''}</td>
+                    <td>${client.TIN || ''}</td>
                     <td title="${client.service}"><div class="truncate" style="max-width: 20ch;">${client.service}</div></td>
                     <td>${formatCurrency(parseFloat(client.amount))}</td>
                     <td>${client.currency}</td>
@@ -671,8 +673,28 @@ $(document).ready(function() {
         form.find('[name="due_amount"]').val((amount - paidAmount).toFixed(2));
     });
 
+    // TIN validation - only allow digits and max 9 characters
+    $(document).on('input', '[name="TIN"]', function() {
+        let value = $(this).val();
+        // Remove non-digit characters
+        value = value.replace(/\D/g, '');
+        // Limit to 9 digits
+        if (value.length > 9) {
+            value = value.substring(0, 9);
+        }
+        $(this).val(value);
+    });
+
     $('#clientForm').on('submit', function(e) {
         e.preventDefault();
+        
+        // Validate TIN if provided
+        const tinValue = $('[name="TIN"]', this).val();
+        if (tinValue && !/^\d{1,9}$/.test(tinValue)) {
+            showToast('TIN must be up to 9 digits only', 'error');
+            return;
+        }
+        
         showLoading(true);
         $.ajax({
             url: 'insert_client.php', type: 'POST', data: $(this).serialize(), dataType: 'json',
@@ -696,15 +718,17 @@ $(document).ready(function() {
         const cells = row.children('td');
         const clientData = {
             reg_no: $(cells[1]).text(), client_name: $(cells[2]).text(), date: $(cells[3]).text(),
-            phone_number: $(cells[4]).text(), service: $(cells[5]).text(), amount: $(cells[6]).text().replace(/,/g, ''),
-            currency: $(cells[7]).text(), paid_amount: $(cells[8]).text().replace(/,/g, '')
+            Responsible: $(cells[4]).text(), TIN: $(cells[5]).text(), service: $(cells[6]).text(), 
+            amount: $(cells[7]).text().replace(/,/g, ''), currency: $(cells[8]).text(), 
+            paid_amount: $(cells[9]).text().replace(/,/g, '')
         };
         const editRowHtml = `
             <td class="p-2">${$(cells[0]).text()}</td>
             <td class="p-2"><input type="text" name="reg_no" class="form-control form-control-sm" value="${clientData.reg_no}"></td>
             <td class="p-2"><input type="text" name="client_name" class="form-control form-control-sm" value="${clientData.client_name}"></td>
             <td class="p-2"><input type="date" name="date" class="form-control form-control-sm" value="${clientData.date}"></td>
-            <td class="p-2"><input type="text" name="phone_number" class="form-control form-control-sm" value="${clientData.phone_number}"></td>
+            <td class="p-2"><input type="text" name="Responsible" class="form-control form-control-sm" value="${clientData.Responsible}"></td>
+            <td class="p-2"><input type="text" name="TIN" class="form-control form-control-sm" maxlength="9" pattern="[0-9]{1,9}" value="${clientData.TIN}"></td>
             <td class="p-2"><input type="text" name="service" class="form-control form-control-sm" value="${clientData.service}"></td>
             <td class="p-2"><input type="number" name="amount" class="form-control form-control-sm" step="0.01" value="${clientData.amount}"></td>
             <td class="p-2"><select name="currency" class="form-control form-control-sm form-select"><option value="RWF">RWF</option><option value="USD">USD</option><option value="EUR">EUR</option></select></td>

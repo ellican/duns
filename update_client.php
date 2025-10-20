@@ -26,7 +26,8 @@ $newData = [
     'reg_no' => isset($_POST['reg_no']) ? htmlspecialchars(trim($_POST['reg_no']), ENT_QUOTES, 'UTF-8') : '',
     'client_name' => isset($_POST['client_name']) ? htmlspecialchars(trim($_POST['client_name']), ENT_QUOTES, 'UTF-8') : '',
     'date' => isset($_POST['date']) ? trim($_POST['date']) : '',
-    'phone_number' => isset($_POST['phone_number']) ? htmlspecialchars(trim($_POST['phone_number']), ENT_QUOTES, 'UTF-8') : '',
+    'Responsible' => isset($_POST['Responsible']) ? htmlspecialchars(trim($_POST['Responsible']), ENT_QUOTES, 'UTF-8') : '',
+    'TIN' => isset($_POST['TIN']) ? htmlspecialchars(trim($_POST['TIN']), ENT_QUOTES, 'UTF-8') : '',
     'service' => isset($_POST['service']) ? htmlspecialchars(trim($_POST['service']), ENT_QUOTES, 'UTF-8') : '',
     'currency' => isset($_POST['currency']) ? htmlspecialchars(trim($_POST['currency']), ENT_QUOTES, 'UTF-8') : '',
     'amount' => filter_input(INPUT_POST, 'amount', FILTER_VALIDATE_FLOAT),
@@ -36,6 +37,13 @@ $newData = [
 if (!$id || empty($newData['client_name']) || $newData['amount'] === false || $newData['paid_amount'] === false) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Invalid input data. Client ID, Name, Amount, and Paid Amount are required.']);
+    exit;
+}
+
+// Validate TIN if provided - must be numeric and max 9 digits
+if (!empty($newData['TIN']) && (!ctype_digit($newData['TIN']) || strlen($newData['TIN']) > 9)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'TIN must be numeric and up to 9 digits.']);
     exit;
 }
 
@@ -61,13 +69,16 @@ try {
         throw new Exception("Client with ID $id not found.");
     }
 
-    $sql = "UPDATE clients SET reg_no=:reg_no, client_name=:client_name, date=:date, phone_number=:phone_number, service=:service, amount=:amount, currency=:currency, paid_amount=:paid_amount, due_amount=:due_amount, status=:status WHERE id=:id";
+    $sql = "UPDATE clients SET reg_no=:reg_no, client_name=:client_name, date=:date, Responsible=:Responsible, TIN=:TIN, service=:service, amount=:amount, currency=:currency, paid_amount=:paid_amount, due_amount=:due_amount, status=:status WHERE id=:id";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute(array_merge($newData, ['id' => $id]));
+    $updateData = array_merge($newData, ['id' => $id]);
+    // Convert empty TIN to null
+    $updateData['TIN'] = !empty($updateData['TIN']) ? $updateData['TIN'] : null;
+    $stmt->execute($updateData);
 
     // Generate a detailed history log
     $changes = [];
-    $editableFields = ['reg_no', 'client_name', 'date', 'phone_number', 'service', 'amount', 'currency', 'paid_amount'];
+    $editableFields = ['reg_no', 'client_name', 'date', 'Responsible', 'TIN', 'service', 'amount', 'currency', 'paid_amount'];
     foreach ($editableFields as $key) {
         // Use string casting to handle type differences (e.g., '50.00' vs 50)
         if (isset($oldData[$key]) && isset($newData[$key]) && (string)$oldData[$key] !== (string)$newData[$key]) {

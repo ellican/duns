@@ -24,13 +24,21 @@ if (!isset($pdo)) {
 $reg_no = isset($_POST['reg_no']) ? htmlspecialchars(trim($_POST['reg_no']), ENT_QUOTES, 'UTF-8') : '';
 $client_name = isset($_POST['client_name']) ? htmlspecialchars(trim($_POST['client_name']), ENT_QUOTES, 'UTF-8') : '';
 $date = isset($_POST['date']) ? trim($_POST['date']) : '';
-$phone_number = isset($_POST['phone_number']) ? htmlspecialchars(trim($_POST['phone_number']), ENT_QUOTES, 'UTF-8') : '';
+$Responsible = isset($_POST['Responsible']) ? htmlspecialchars(trim($_POST['Responsible']), ENT_QUOTES, 'UTF-8') : '';
+$TIN = isset($_POST['TIN']) ? htmlspecialchars(trim($_POST['TIN']), ENT_QUOTES, 'UTF-8') : '';
 $service = isset($_POST['service']) ? htmlspecialchars(trim($_POST['service']), ENT_QUOTES, 'UTF-8') : '';
 $currency = isset($_POST['currency']) ? htmlspecialchars(trim($_POST['currency']), ENT_QUOTES, 'UTF-8') : '';
 
 // For numeric values, filter_input remains a great choice for validation
 $amount = filter_input(INPUT_POST, 'amount', FILTER_VALIDATE_FLOAT);
 $paid_amount = filter_input(INPUT_POST, 'paid_amount', FILTER_VALIDATE_FLOAT, ['options' => ['default' => 0]]);
+
+// Validate TIN if provided - must be numeric and max 9 digits
+if (!empty($TIN) && (!ctype_digit($TIN) || strlen($TIN) > 9)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'TIN must be numeric and up to 9 digits.']);
+    exit;
+}
 
 // Basic validation
 if (empty($client_name) || empty($date) || $amount === false || $paid_amount === false) {
@@ -52,14 +60,15 @@ if ($paid_amount >= $amount && $amount > 0) {
 try {
     $pdo->beginTransaction();
 
-    $sql = "INSERT INTO clients (reg_no, client_name, date, phone_number, service, amount, currency, paid_amount, due_amount, status) 
-            VALUES (:reg_no, :client_name, :date, :phone_number, :service, :amount, :currency, :paid_amount, :due_amount, :status)";
+    $sql = "INSERT INTO clients (reg_no, client_name, date, Responsible, TIN, service, amount, currency, paid_amount, due_amount, status) 
+            VALUES (:reg_no, :client_name, :date, :Responsible, :TIN, :service, :amount, :currency, :paid_amount, :due_amount, :status)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':reg_no' => $reg_no,
         ':client_name' => $client_name,
         ':date' => $date,
-        ':phone_number' => $phone_number,
+        ':Responsible' => $Responsible,
+        ':TIN' => !empty($TIN) ? $TIN : null,
         ':service' => $service,
         ':amount' => $amount,
         ':currency' => $currency,

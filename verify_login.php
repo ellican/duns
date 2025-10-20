@@ -43,6 +43,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $update_stmt = $pdo->prepare("UPDATE users SET login_otp = NULL, login_otp_expires_at = NULL WHERE id = :id");
                     $update_stmt->execute([':id' => $user['id']]);
 
+                    // --- SECURITY TRACKING: Capture login details ---
+                    $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+                    $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+                    
+                    // Extract device info from User-Agent
+                    $device = 'Unknown Device';
+                    if (preg_match('/\((.*?)\)/', $user_agent, $matches)) {
+                        $device = $matches[1];
+                    }
+                    
+                    // Get approximate location from IP (using a free IP geolocation service)
+                    $location = 'Unknown Location';
+                    $country_code = 'XX';
+                    try {
+                        $geo_data = @file_get_contents("http://ip-api.com/json/{$ip_address}");
+                        if ($geo_data) {
+                            $geo = json_decode($geo_data, true);
+                            if ($geo && $geo['status'] === 'success') {
+                                $location = ($geo['city'] ?? '') . ', ' . ($geo['country'] ?? '');
+                                $country_code = $geo['countryCode'] ?? 'XX';
+                            }
+                        }
+                    } catch (Exception $e) {
+                        // If geolocation fails, continue with unknown location
+                    }
+
+                    // Store login attempt in database
+                    try {
+                        $login_stmt = $pdo->prepare("INSERT INTO login_attempts (user_id, device, ip_address, location, country_code) VALUES (:user_id, :device, :ip_address, :location, :country_code)");
+                        $login_stmt->execute([
+                            ':user_id' => $user['id'],
+                            ':device' => substr($device, 0, 255),
+                            ':ip_address' => $ip_address,
+                            ':location' => substr($location, 0, 255),
+                            ':country_code' => $country_code
+                        ]);
+                    } catch (PDOException $e) {
+                        // Log error but don't prevent login
+                        error_log("Failed to log login attempt: " . $e->getMessage());
+                    }
+
+                    // Send security notification email
+                    $email_subject = "New Login to Your Feza Logistics Account";
+                    $email_body = "
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; }
+                            .container { max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa; }
+                            .header { background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+                            .content { background: white; padding: 30px; border-radius: 0 0 8px 8px; }
+                            .info-box { background: #eff6ff; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0; }
+                            .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+                            .info-label { font-weight: bold; color: #1e40af; }
+                            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+                            .flag { font-size: 24px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class='container'>
+                            <div class='header'>
+                                <h2>🔐 Security Alert</h2>
+                            </div>
+                            <div class='content'>
+                                <p>Hello <strong>{$user['first_name']}</strong>,</p>
+                                <p>We detected a new login to your Feza Logistics account. If this was you, you can safely ignore this email.</p>
+                                
+                                <div class='info-box'>
+                                    <h3 style='margin-top: 0; color: #1e40af;'>Login Details:</h3>
+                                    <div class='info-row'>
+                                        <span class='info-label'>Time:</span>
+                                        <span>" . date('F j, Y, g:i a') . "</span>
+                                    </div>
+                                    <div class='info-row'>
+                                        <span class='info-label'>IP Address:</span>
+                                        <span>{$ip_address}</span>
+                                    </div>
+                                    <div class='info-row'>
+                                        <span class='info-label'>Device:</span>
+                                        <span>{$device}</span>
+                                    </div>
+                                    <div class='info-row'>
+                                        <span class='info-label'>Location:</span>
+                                        <span>{$location}</span>
+                                    </div>
+                                </div>
+
+                                <p><strong>If this wasn't you:</strong></p>
+                                <ul>
+                                    <li>Change your password immediately</li>
+                                    <li>Contact our support team</li>
+                                    <li>Review your recent account activity</li>
+                                </ul>
+
+                                <p>Thank you for using Feza Logistics.</p>
+                            </div>
+                            <div class='footer'>
+                                <p>This is an automated security notification from Feza Logistics.<br>
+                                Please do not reply to this email.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                    ";
+
+                    $headers = "MIME-Version: 1.0\r\n";
+                    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+                    $headers .= "From: Feza Logistics Security <security@fezalogistics.com>\r\n";
+                    
+                    // Send email (in production, consider using a proper email service)
+                    @mail($user['email'], $email_subject, $email_body, $headers);
+
                     // Redirect to the main page
                     header('Location: index.php');
                     exit;
