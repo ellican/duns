@@ -193,8 +193,14 @@ curl http://localhost:11434/api/tags
 # Check Ollama logs
 journalctl -u ollama -f
 
-# Test TinyLlama
-ollama run tinyllama "SELECT * FROM clients LIMIT 5"
+# Test TinyLlama directly (not used in production flow)
+ollama run tinyllama "Generate a SQL SELECT query to show clients"
+
+# Test the actual AI assistant endpoint (requires session)
+curl -X POST http://localhost/ai_assistant.php \
+  -H "Content-Type: application/json" \
+  -H "Cookie: PHPSESSID=your_session_id" \
+  -d '{"query": "Show all clients"}'
 
 # Check PHP errors
 tail -f /var/log/apache2/error.log
