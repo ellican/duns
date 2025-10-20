@@ -1,1 +1,19 @@
 DATABASE_FIX_SUMMARY.md
+
+# AI Assistant temporary files
+/tmp/ollama*.log
+nohup.out
+
+# Demo and test files (exclude from production)
+ai-chat-demo.html
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
