@@ -60,7 +60,8 @@ ALTER TABLE `clients` CHANGE COLUMN `Responsible` `phone_number` VARCHAR(20) DEF
 
 ### Rollback 002
 ```sql
-ALTER TABLE `clients` DROP COLUMN `TIN`, DROP INDEX `idx_tin`;
+ALTER TABLE `clients` DROP INDEX `idx_tin`;
+ALTER TABLE `clients` DROP COLUMN `TIN`;
 ```
 
 ### Rollback 003

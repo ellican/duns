@@ -64,7 +64,7 @@ try {
     // **FIXED**: Use unique named placeholders for the search query to prevent "Invalid parameter number" error.
     if (!empty($_GET['searchQuery'])) {
         $searchQuery = '%' . trim($_GET['searchQuery']) . '%';
-        // Search by reg_no, client_name, Responsible (or phone_number for backward compatibility), and TIN
+        // Search by reg_no, client_name, Responsible, and TIN
         $where_clauses[] = "(reg_no LIKE :searchQuery1 OR client_name LIKE :searchQuery2 OR Responsible LIKE :searchQuery3 OR TIN LIKE :searchQuery4)";
         $params[':searchQuery1'] = $searchQuery;
         $params[':searchQuery2'] = $searchQuery;

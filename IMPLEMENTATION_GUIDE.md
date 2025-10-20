@@ -72,8 +72,8 @@ mysql -u your_username -p duns < migrations/003_create_login_attempts_table.sql
 All application files have been updated. If you're deploying to production:
 
 ```bash
-# Pull the latest changes
-git pull origin copilot/redesign-login-page
+# Pull the latest changes from the main branch (after PR is merged)
+git pull origin main
 
 # Or copy the updated files:
 # - login.php
@@ -142,7 +142,7 @@ The security notification feature uses PHP's `mail()` function. For production:
 
 ## Security Considerations
 
-1. **TIN Data**: Consider encrypting TIN values in the database for PCI compliance
+1. **TIN Data**: Consider encrypting TIN values in the database as they are sensitive personal information. Ensure compliance with local data protection regulations.
 2. **Login Tracking**: The `login_attempts` table stores sensitive data - ensure proper access controls
 3. **Email Security**: Use authenticated SMTP for production email sending
 4. **IP Geolocation**: The free IP API has rate limits - consider caching or premium service
@@ -156,7 +156,8 @@ If you need to revert the changes:
 DROP TABLE IF EXISTS `login_attempts`;
 
 -- Rollback migration 002
-ALTER TABLE `clients` DROP COLUMN `TIN`, DROP INDEX `idx_tin`;
+ALTER TABLE `clients` DROP INDEX `idx_tin`;
+ALTER TABLE `clients` DROP COLUMN `TIN`;
 
 -- Rollback migration 001
 ALTER TABLE `clients` CHANGE COLUMN `Responsible` `phone_number` VARCHAR(20) DEFAULT NULL;
