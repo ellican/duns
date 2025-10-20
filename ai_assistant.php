@@ -77,6 +77,12 @@ STRICT RULES:
 9. If user asks for totals or sums, use aggregate functions (SUM, COUNT, AVG, etc.)
 10. Join tables when needed for comprehensive answers
 
+EXAMPLE QUERIES:
+- 'total revenue this month' → SELECT SUM(paid_amount) as total FROM clients WHERE MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())
+- 'unpaid invoices' → SELECT * FROM clients WHERE status = 'NOT PAID' LIMIT 100
+- 'top 5 clients' → SELECT client_name, SUM(amount) as total_revenue FROM clients GROUP BY client_name ORDER BY total_revenue DESC LIMIT 5
+- 'USD revenue' → SELECT SUM(paid_amount) as total FROM clients WHERE currency = 'USD'
+
 $schema_info
 
 User Query: ";
@@ -229,7 +235,28 @@ function formatResults($results, $user_query) {
         $response .= "_Showing first 10 of {$count} results._\n";
     }
     
+    // Check if user is asking for a report/document
+    if (detectReportRequest($user_query) && $count > 0) {
+        $response .= "\n\n💡 **Tip:** To generate a printable PDF report of these results, you can use the document generation features in the dashboard. Click on any client row to access invoice and receipt generation.\n";
+    }
+    
     return $response;
+}
+
+/**
+ * Detect if user is asking for a report or document
+ */
+function detectReportRequest($query) {
+    $report_keywords = ['report', 'pdf', 'print', 'document', 'invoice', 'receipt', 'statement', 'summary', 'export', 'download'];
+    $query_lower = strtolower($query);
+    
+    foreach ($report_keywords as $keyword) {
+        if (strpos($query_lower, $keyword) !== false) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 /**
