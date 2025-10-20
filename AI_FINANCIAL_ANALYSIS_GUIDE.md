@@ -334,17 +334,12 @@ Test the enhancements with these queries:
 
 ### Unit Tests
 
-Run the test suite:
-```bash
-php /tmp/test_ai_assistant.php
-```
+A test suite is available for validating the core functions. The test script includes:
+- Currency formatting tests (4 tests)
+- Conversational detection tests (10 tests)
+- SQL validation tests (6 tests)
 
-Tests cover:
-- ✅ Currency formatting (4 tests)
-- ✅ Conversational detection (10 tests)
-- ✅ SQL validation (6 tests)
-
-All 20 tests pass successfully.
+To run tests, you can create a test file with the test cases from the implementation or run manual tests through the chat interface.
 
 ## Monitoring
 
@@ -377,7 +372,7 @@ All interactions logged with:
 
 Check logs:
 ```bash
-tail -f /home/runner/work/duns/duns/logs/ai_assistant.log
+tail -f logs/ai_assistant.log
 ```
 
 Or query database:
