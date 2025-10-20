@@ -194,14 +194,14 @@ Potential improvements:
 ### Rollback
 If issues occur, revert to previous commit:
 ```bash
-git revert df29721
+git revert <commit-hash>
 ```
 
 ## Performance Impact
 
-- **Conversational responses**: ~50ms faster (no SQL execution)
+- **Conversational responses**: Approximately 50ms faster (no SQL execution)
 - **Data queries**: Same performance as before
-- **Logging overhead**: Negligible (~5-10ms)
+- **Logging overhead**: Negligible (approximately 5-10ms)
 - **File logging**: Async, no user-facing impact
 
 ## Conclusion
