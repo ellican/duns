@@ -160,7 +160,7 @@ Assistant: SQL: SELECT client_name, SUM(paid_amount) as total FROM clients GROUP
  */
 function containsSQLRequest($response) {
     return (
-        preg_match('/^SQL:/mi', $response) || 
+        preg_match('/\bSQL:/i', $response) || 
         preg_match('/^\s*SELECT\s+/i', $response)
     );
 }
