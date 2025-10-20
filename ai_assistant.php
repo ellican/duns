@@ -86,9 +86,20 @@ function buildSystemPrompt($pdo) {
     $schema_info .= "Table: client_history\n";
     $schema_info .= "Columns: id, client_id, user_name, action, details, changed_at\n\n";
     
-    $system_prompt = "You are a professional financial assistant for Feza Logistics. Your ONLY source of truth is the application database. 
+    $system_prompt = "You are a helpful and friendly financial assistant for Feza Logistics. You help users with financial data queries.
 
-STRICT RULES:
+IMPORTANT BEHAVIORAL RULES:
+1. If the user greets you (hi, hello, hey, good morning, etc.) or engages in casual conversation, respond naturally and warmly without generating SQL. Just have a friendly conversation.
+2. If the user asks about your capabilities or who you are, explain that you're a financial assistant that can help query financial data, and provide examples of what you can do.
+3. ONLY generate SQL queries when the user is asking for specific financial data (revenue, invoices, clients, amounts, etc.)
+4. For data queries: Return ONLY the SQL query without any additional text, explanations, or markdown.
+
+RESPONSE FORMAT:
+- For greetings/conversation: Respond naturally in plain text (e.g., \"Hello! I'm your financial assistant. How can I help you today?\")
+- For capability questions: Explain what you can do in plain text
+- For data queries: Return ONLY a SQL SELECT query
+
+SQL GENERATION RULES (only when generating SQL):
 1. ONLY generate SELECT queries - NEVER use INSERT, UPDATE, DELETE, DROP, ALTER, or any other modifying statements
 2. Always use proper SQL syntax for MySQL/MariaDB
 3. Return ONLY the SQL query without any explanations, markdown, or additional text
@@ -100,11 +111,13 @@ STRICT RULES:
 9. If user asks for totals or sums, use aggregate functions (SUM, COUNT, AVG, etc.)
 10. Join tables when needed for comprehensive answers
 
-EXAMPLE QUERIES:
-- 'total revenue this month' → SELECT SUM(paid_amount) as total FROM clients WHERE MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())
-- 'unpaid invoices' → SELECT * FROM clients WHERE status = 'NOT PAID' LIMIT 100
-- 'top 5 clients' → SELECT client_name, SUM(amount) as total_revenue FROM clients GROUP BY client_name ORDER BY total_revenue DESC LIMIT 5
-- 'USD revenue' → SELECT SUM(paid_amount) as total FROM clients WHERE currency = 'USD'
+EXAMPLE RESPONSES:
+- User: 'hi' → \"Hello! I'm your financial assistant. I can help you with information about revenue, invoices, clients, and financial data. What would you like to know?\"
+- User: 'what can you do?' → \"I can help you query financial data such as: revenue totals, unpaid invoices, client information, payment status, and more. Just ask me any question about your financial data!\"
+- User: 'total revenue this month' → SELECT SUM(paid_amount) as total FROM clients WHERE MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())
+- User: 'unpaid invoices' → SELECT * FROM clients WHERE status = 'NOT PAID' LIMIT 100
+- User: 'top 5 clients' → SELECT client_name, SUM(amount) as total_revenue FROM clients GROUP BY client_name ORDER BY total_revenue DESC LIMIT 5
+- User: 'USD revenue' → SELECT SUM(paid_amount) as total FROM clients WHERE currency = 'USD'
 
 $schema_info
 
@@ -177,6 +190,41 @@ function queryOllama($prompt, $system_prompt) {
     logDebug("AI Generated Response: " . $result['response']);
     
     return $result['response'];
+}
+
+/**
+ * Check if the AI response is conversational (not SQL)
+ */
+function isConversationalResponse($ai_response) {
+    $trimmed = trim($ai_response);
+    
+    // Check if it starts with SELECT (SQL query)
+    if (preg_match('/^\s*SELECT\s+/i', $trimmed)) {
+        return false;
+    }
+    
+    // Check for conversational patterns
+    $conversational_patterns = [
+        '/^(hello|hi|hey|good morning|good afternoon|good evening|greetings)/i',
+        '/^(I\'m|I am|My name is)/i',
+        '/^(Sure|Of course|Certainly|Yes|No)/i',
+        '/\?$/', // Ends with question
+        '/(can help|here to assist|how may I|what can I do)/i'
+    ];
+    
+    foreach ($conversational_patterns as $pattern) {
+        if (preg_match($pattern, $trimmed)) {
+            return true;
+        }
+    }
+    
+    // If it's multiple sentences without SELECT keyword, likely conversational
+    $sentences = preg_split('/[.!?]+/', $trimmed);
+    if (count($sentences) > 2 && !stripos($trimmed, 'SELECT')) {
+        return true;
+    }
+    
+    return false;
 }
 
 /**
@@ -368,11 +416,35 @@ try {
     
     // Build system prompt with schema
     $system_prompt = buildSystemPrompt($pdo);
+    logDebug("System Prompt Length: " . strlen($system_prompt) . " characters");
     
     // Query Ollama
     $ai_sql_response = queryOllama($user_query, $system_prompt);
+    logDebug("AI Raw Response: " . $ai_sql_response);
     
-    // Extract and validate SQL
+    // Check if the response is conversational (not SQL)
+    if (isConversationalResponse($ai_sql_response)) {
+        logDebug("=== CONVERSATIONAL RESPONSE DETECTED ===");
+        
+        $execution_time = round((microtime(true) - $start_time) * 1000);
+        
+        // Log the conversational interaction
+        logAIInteraction($pdo, $user_id, $session_id, $user_query, $ai_sql_response, null, 0, $execution_time, 'conversational');
+        
+        // Return conversational response directly
+        echo json_encode([
+            'success' => true,
+            'response' => $ai_sql_response,
+            'type' => 'conversational',
+            'execution_time_ms' => $execution_time
+        ]);
+        
+        logDebug("=== CONVERSATIONAL REQUEST SUCCESSFUL ===");
+        logDebug("Execution time: {$execution_time}ms");
+        exit;
+    }
+    
+    // Try to extract and validate SQL
     $sql = extractAndValidateSQL($ai_sql_response);
     
     // Execute SQL
@@ -387,6 +459,7 @@ try {
     logDebug("=== REQUEST SUCCESSFUL ===");
     logDebug("Execution time: {$execution_time}ms");
     logDebug("Result count: " . count($results));
+    logDebug("Final Response to User: " . substr($formatted_response, 0, 200) . "...");
     
     // Log the interaction
     logAIInteraction($pdo, $user_id, $session_id, $user_query, $formatted_response, $sql, count($results), $execution_time, 'success');
@@ -397,6 +470,7 @@ try {
         'response' => $formatted_response,
         'sql' => $sql, // For debugging/transparency
         'result_count' => count($results),
+        'type' => 'data_query',
         'execution_time_ms' => $execution_time
     ]);
     
@@ -430,13 +504,18 @@ try {
         $user_friendly_message = "I had trouble running the query. Please try rephrasing your question or simplifying your request.";
     } elseif (strpos($error_message, 'Only SELECT queries are allowed') !== false) {
         $user_friendly_message = "I can only answer questions that retrieve data. I cannot modify or delete information.";
+    } elseif (strpos($error_message, 'Blocked dangerous keyword') !== false) {
+        $user_friendly_message = "I can only answer questions that retrieve data. I cannot modify or delete information.";
     }
+    
+    logDebug("User-friendly message: " . $user_friendly_message);
     
     // Return error response
     http_response_code(500);
     echo json_encode([
         'success' => false,
         'error' => $error_message,
-        'user_message' => $user_friendly_message
+        'user_message' => $user_friendly_message,
+        'type' => 'error'
     ]);
 }

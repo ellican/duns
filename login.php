@@ -316,6 +316,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: translateY(0);
         }
 
+        .terms-notice {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .terms-notice .terms-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .terms-notice .terms-link:hover {
+            text-decoration: underline;
+        }
+
         .signup-link {
             text-align: center;
             margin-top: 2rem;
@@ -463,6 +481,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <button type="submit" class="submit-button">Sign In</button>
+                    
+                    <div class="terms-notice">
+                        By signing in you agree to our <a href="#" class="terms-link">Terms and Conditions</a>.
+                    </div>
                 </form>
 
                 <div class="signup-link">
