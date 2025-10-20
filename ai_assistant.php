@@ -27,6 +27,7 @@ define('OLLAMA_API_URL', 'http://localhost:11434/api/generate');
 define('OLLAMA_MODEL', 'tinyllama');
 define('MAX_RESPONSE_TOKENS', 500);
 define('SQL_TIMEOUT', 5); // seconds
+define('LOG_FILE', __DIR__ . '/logs/ai_assistant.log'); // Log file for debugging
 
 // Get request data
 $request_body = file_get_contents('php://input');
@@ -44,6 +45,28 @@ $user_id = $_SESSION['user_id'];
 
 // Start timing
 $start_time = microtime(true);
+
+/**
+ * Log debug information to file
+ */
+function logDebug($message, $data = null) {
+    // Ensure logs directory exists
+    $log_dir = dirname(LOG_FILE);
+    if (!file_exists($log_dir)) {
+        @mkdir($log_dir, 0755, true);
+    }
+    
+    $timestamp = date('Y-m-d H:i:s');
+    $log_message = "[{$timestamp}] {$message}";
+    
+    if ($data !== null) {
+        $log_message .= "\n" . print_r($data, true);
+    }
+    
+    $log_message .= "\n" . str_repeat('-', 80) . "\n";
+    
+    @file_put_contents(LOG_FILE, $log_message, FILE_APPEND);
+}
 
 /**
  * Build system prompt with database schema information
@@ -107,6 +130,11 @@ function queryOllama($prompt, $system_prompt) {
         ]
     ];
     
+    // Log the request
+    logDebug("=== OLLAMA API REQUEST ===");
+    logDebug("URL: " . OLLAMA_API_URL);
+    logDebug("Payload:", $payload);
+    
     $ch = curl_init(OLLAMA_API_URL);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
@@ -115,17 +143,38 @@ function queryOllama($prompt, $system_prompt) {
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     
     $response = curl_exec($ch);
+    $curl_error = curl_error($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     
-    if ($http_code !== 200) {
-        throw new Exception("Ollama API returned status code: $http_code");
+    // Log the response
+    logDebug("=== OLLAMA API RESPONSE ===");
+    logDebug("HTTP Code: " . $http_code);
+    
+    if ($curl_error) {
+        logDebug("cURL Error: " . $curl_error);
+        throw new Exception("Failed to connect to Ollama API: " . $curl_error);
     }
     
-    $result = json_decode($response, true);
-    if (!$result || !isset($result['response'])) {
-        throw new Exception("Invalid response from Ollama API");
+    if ($http_code !== 200) {
+        logDebug("Error Response:", $response);
+        throw new Exception("Ollama API returned status code: $http_code. Response: " . substr($response, 0, 200));
     }
+    
+    logDebug("Raw Response:", $response);
+    
+    $result = json_decode($response, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        logDebug("JSON Decode Error: " . json_last_error_msg());
+        throw new Exception("Invalid JSON response from Ollama API: " . json_last_error_msg());
+    }
+    
+    if (!$result || !isset($result['response'])) {
+        logDebug("Invalid Response Structure:", $result);
+        throw new Exception("Invalid response from Ollama API - missing 'response' field");
+    }
+    
+    logDebug("AI Generated Response: " . $result['response']);
     
     return $result['response'];
 }
@@ -134,6 +183,9 @@ function queryOllama($prompt, $system_prompt) {
  * Extract and validate SQL query from AI response
  */
 function extractAndValidateSQL($ai_response) {
+    logDebug("=== EXTRACTING SQL ===");
+    logDebug("AI Response to Parse:", $ai_response);
+    
     // Remove markdown code blocks if present
     $sql = preg_replace('/```sql\s*(.*?)\s*```/s', '$1', $ai_response);
     $sql = preg_replace('/```\s*(.*?)\s*```/s', '$1', $sql);
@@ -144,8 +196,11 @@ function extractAndValidateSQL($ai_response) {
     // Remove any trailing semicolons
     $sql = rtrim($sql, ';');
     
+    logDebug("Cleaned SQL:", $sql);
+    
     // Validate that it's a SELECT query
     if (!preg_match('/^\s*SELECT\s+/i', $sql)) {
+        logDebug("ERROR: Not a SELECT query");
         throw new Exception("Only SELECT queries are allowed. The AI did not generate a valid SELECT query.");
     }
     
@@ -153,6 +208,7 @@ function extractAndValidateSQL($ai_response) {
     $dangerous_keywords = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE', 'TRUNCATE', 'REPLACE', 'GRANT', 'REVOKE'];
     foreach ($dangerous_keywords as $keyword) {
         if (preg_match('/\b' . $keyword . '\b/i', $sql)) {
+            logDebug("ERROR: Blocked dangerous keyword: {$keyword}");
             throw new Exception("Blocked dangerous keyword: $keyword");
         }
     }
@@ -160,7 +216,10 @@ function extractAndValidateSQL($ai_response) {
     // Ensure LIMIT is present (add if missing)
     if (!preg_match('/\bLIMIT\s+\d+/i', $sql)) {
         $sql .= ' LIMIT 100';
+        logDebug("Added LIMIT clause:", $sql);
     }
+    
+    logDebug("Final Validated SQL:", $sql);
     
     return $sql;
 }
@@ -169,12 +228,25 @@ function extractAndValidateSQL($ai_response) {
  * Execute SQL query safely
  */
 function executeSQLQuery($pdo, $sql) {
+    logDebug("=== EXECUTING SQL ===");
+    logDebug("Query:", $sql);
+    
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        logDebug("Query executed successfully");
+        logDebug("Result count: " . count($results));
+        if (count($results) > 0) {
+            logDebug("First row sample:", $results[0]);
+        }
+        
         return $results;
     } catch (PDOException $e) {
+        logDebug("=== SQL EXECUTION ERROR ===");
+        logDebug("Error Message: " . $e->getMessage());
+        logDebug("Error Code: " . $e->getCode());
         throw new Exception("SQL execution error: " . $e->getMessage());
     }
 }
@@ -289,6 +361,11 @@ function logAIInteraction($pdo, $user_id, $session_id, $user_query, $ai_response
 
 // Main execution flow
 try {
+    logDebug("=== NEW AI ASSISTANT REQUEST ===");
+    logDebug("User ID: " . $user_id);
+    logDebug("Session ID: " . $session_id);
+    logDebug("User Query: " . $user_query);
+    
     // Build system prompt with schema
     $system_prompt = buildSystemPrompt($pdo);
     
@@ -306,6 +383,10 @@ try {
     
     // Calculate execution time
     $execution_time = round((microtime(true) - $start_time) * 1000);
+    
+    logDebug("=== REQUEST SUCCESSFUL ===");
+    logDebug("Execution time: {$execution_time}ms");
+    logDebug("Result count: " . count($results));
     
     // Log the interaction
     logAIInteraction($pdo, $user_id, $session_id, $user_query, $formatted_response, $sql, count($results), $execution_time, 'success');
@@ -327,6 +408,11 @@ try {
     $error_message = $e->getMessage();
     $status = 'error';
     
+    logDebug("=== REQUEST FAILED ===");
+    logDebug("Error Type: " . $status);
+    logDebug("Error Message: " . $error_message);
+    logDebug("Execution time: {$execution_time}ms");
+    
     if (strpos($error_message, 'Blocked dangerous keyword') !== false) {
         $status = 'blocked';
     }
@@ -334,11 +420,23 @@ try {
     // Log the failed interaction
     logAIInteraction($pdo, $user_id, $session_id, $user_query, null, null, 0, $execution_time, $status, $error_message);
     
+    // Provide more helpful error messages to users
+    $user_friendly_message = "I encountered an error processing your request. Please try rephrasing your question or ask something simpler.";
+    
+    // Add specific guidance for common errors
+    if (strpos($error_message, 'Failed to connect to Ollama') !== false) {
+        $user_friendly_message = "The AI service is currently unavailable. Please contact your system administrator.";
+    } elseif (strpos($error_message, 'SQL execution error') !== false) {
+        $user_friendly_message = "I had trouble running the query. Please try rephrasing your question or simplifying your request.";
+    } elseif (strpos($error_message, 'Only SELECT queries are allowed') !== false) {
+        $user_friendly_message = "I can only answer questions that retrieve data. I cannot modify or delete information.";
+    }
+    
     // Return error response
     http_response_code(500);
     echo json_encode([
         'success' => false,
         'error' => $error_message,
-        'user_message' => "I encountered an error processing your request. Please try rephrasing your question or ask something simpler."
+        'user_message' => $user_friendly_message
     ]);
 }
