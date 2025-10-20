@@ -4,6 +4,9 @@ DATABASE_FIX_SUMMARY.md
 /tmp/ollama*.log
 nohup.out
 
+# Demo and test files (exclude from production)
+ai-chat-demo.html
+
 # IDE and editor files
 .vscode/
 .idea/
