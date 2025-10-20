@@ -166,13 +166,13 @@ class AIChatWidget {
                 <div class="ai-message-avatar">AI</div>
                 <div class="ai-message-content">
                     <div class="ai-welcome-message">
-                        <h4>👋 Hello! I'm your Financial Assistant</h4>
-                        <p>I can help you with financial data, reports, and insights. Ask me anything!</p>
+                        <h4>👋 Hi! I'm your financial assistant</h4>
+                        <p>Ask me anything about your financial data. I'll help you find what you need!</p>
                         <div class="ai-quick-questions">
-                            <button class="ai-quick-question" data-question="Show me total revenue for this month">📊 Show total revenue this month</button>
-                            <button class="ai-quick-question" data-question="How many unpaid invoices do we have?">💰 Show unpaid invoices</button>
-                            <button class="ai-quick-question" data-question="List top 5 clients by revenue">👥 Top clients by revenue</button>
-                            <button class="ai-quick-question" data-question="What is our total outstanding amount in USD?">💵 Outstanding amount in USD</button>
+                            <button class="ai-quick-question" data-question="Who is the latest person paid?">💰 Latest payment</button>
+                            <button class="ai-quick-question" data-question="How much did we pay this week?">📊 This week's total</button>
+                            <button class="ai-quick-question" data-question="List top 5 clients by payments">👥 Top clients</button>
+                            <button class="ai-quick-question" data-question="Show me unpaid invoices">⚠️ Unpaid invoices</button>
                         </div>
                     </div>
                 </div>
@@ -265,9 +265,9 @@ class AIChatWidget {
         // Format content (convert markdown-style bold to HTML)
         const formattedContent = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
         
-        let sqlHtml = '';
-        if (sql && !isError) {
-            sqlHtml = `<div class="ai-sql-display" title="SQL Query Executed">${this.escapeHtml(sql)}</div>`;
+        // Don't show SQL in UI anymore, only in console
+        if (sql) {
+            console.log('SQL executed:', sql);
         }
         
         let errorClass = isError ? ' ai-error-message' : '';
@@ -277,7 +277,6 @@ class AIChatWidget {
                 <div class="ai-message-avatar">${sender === 'user' ? 'You' : 'AI'}</div>
                 <div class="ai-message-content${errorClass}">
                     ${formattedContent}
-                    ${sqlHtml}
                     <div class="ai-message-meta">${timestamp}</div>
                 </div>
             </div>
