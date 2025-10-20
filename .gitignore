@@ -1,6 +1,7 @@
 DATABASE_FIX_SUMMARY.md
 
-# AI Assistant temporary files
+# AI Assistant logs
+logs/
 /tmp/ollama*.log
 nohup.out
 
