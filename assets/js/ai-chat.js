@@ -166,13 +166,18 @@ class AIChatWidget {
                 <div class="ai-message-avatar">AI</div>
                 <div class="ai-message-content">
                     <div class="ai-welcome-message">
-                        <h4>👋 Hi! I'm your financial assistant</h4>
-                        <p>Ask me anything about your financial data. I'll help you find what you need!</p>
+                        <h4>👋 Hi! I'm your smart financial assistant</h4>
+                        <p>I can help you in two ways:</p>
+                        <ul style="text-align: left; font-size: 0.9em; margin: 10px 0;">
+                            <li>📊 Answer questions about <strong>your company data</strong> (payments, clients, revenue)</li>
+                            <li>🧠 Explain <strong>financial concepts</strong> and teach you about accounting</li>
+                        </ul>
+                        <p>Try asking me anything!</p>
                         <div class="ai-quick-questions">
                             <button class="ai-quick-question" data-question="Who is the latest person paid?">💰 Latest payment</button>
-                            <button class="ai-quick-question" data-question="How much did we pay this week?">📊 This week's total</button>
-                            <button class="ai-quick-question" data-question="List top 5 clients by payments">👥 Top clients</button>
-                            <button class="ai-quick-question" data-question="Show me unpaid invoices">⚠️ Unpaid invoices</button>
+                            <button class="ai-quick-question" data-question="What is gross profit?">🧠 Explain gross profit</button>
+                            <button class="ai-quick-question" data-question="Show top 5 clients">👥 Top clients</button>
+                            <button class="ai-quick-question" data-question="How does invoicing work?">📚 Teach me invoicing</button>
                         </div>
                     </div>
                 </div>
