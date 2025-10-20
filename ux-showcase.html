@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feza Logistics - Modern UX Showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/design-system.css">
+    <link rel="stylesheet" href="assets/css/application.css">
+    
+    <style>
+        .showcase-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-8);
+        }
+        
+        .showcase-header {
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+            color: var(--text-inverse);
+            text-align: center;
+            padding: var(--space-12) var(--space-8);
+            border-radius: var(--radius-xl);
+            margin-bottom: var(--space-8);
+        }
+        
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-8);
+        }
+        
+        .component-demo {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-primary);
+        }
+        
+        .demo-section {
+            margin-bottom: var(--space-8);
+        }
+        
+        .demo-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+        }
+        
+        .button-showcase {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3);
+        }
+        
+        .form-showcase {
+            max-width: 400px;
+        }
+        
+        .card-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-4);
+        }
+        
+        .sample-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-primary);
+            transition: all var(--transition-base);
+        }
+        
+        .sample-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .sample-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: var(--space-3);
+        }
+        
+        .color-swatch {
+            text-align: center;
+            border-radius: var(--radius-base);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-primary);
+        }
+        
+        .color-box {
+            height: 80px;
+            width: 100%;
+        }
+        
+        .color-info {
+            padding: var(--space-2);
+            background: var(--bg-primary);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="showcase-container">
+        <!-- Header -->
+        <div class="showcase-header">
+            <h1 class="text-4xl font-bold mb-4">Feza Logistics</h1>
+            <p class="text-xl opacity-90">Professional UX Transformation Complete</p>
+            <p class="mt-4">Modern design system with enterprise-grade components</p>
+        </div>
+
+        <!-- Design System Overview -->
+        <div class="demo-section">
+            <h2 class="demo-title">Professional Design System</h2>
+            <div class="showcase-grid">
+                <div class="component-demo">
+                    <h3 class="mb-4">Color Palette</h3>
+                    <div class="color-palette">
+                        <div class="color-swatch">
+                            <div class="color-box" style="background-color: var(--primary-600);"></div>
+                            <div class="color-info">Primary</div>
+                        </div>
+                        <div class="color-swatch">
+                            <div class="color-box" style="background-color: var(--success-600);"></div>
+                            <div class="color-info">Success</div>
+                        </div>
+                        <div class="color-swatch">
+                            <div class="color-box" style="background-color: var(--warning-500);"></div>
+                            <div class="color-info">Warning</div>
+                        </div>
+                        <div class="color-swatch">
+                            <div class="color-box" style="background-color: var(--error-500);"></div>
+                            <div class="color-info">Error</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="component-demo">
+                    <h3 class="mb-4">Typography</h3>
+                    <div class="space-y-3">
+                        <h1 class="text-3xl font-bold">Heading 1</h1>
+                        <h2 class="text-2xl font-semibold">Heading 2</h2>
+                        <h3 class="text-xl font-medium">Heading 3</h3>
+                        <p class="text-base">Regular paragraph text with proper spacing</p>
+                        <p class="text-sm text-muted">Small text for captions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="demo-section">
+            <h2 class="demo-title">Professional Button Components</h2>
+            <div class="component-demo">
+                <div class="button-showcase">
+                    <button class="btn btn-primary">Primary Action</button>
+                    <button class="btn btn-secondary">Secondary</button>
+                    <button class="btn btn-success">Success</button>
+                    <button class="btn btn-warning">Warning</button>
+                    <button class="btn btn-danger">Danger</button>
+                    <button class="btn btn-outline">Outline</button>
+                    <button class="btn btn-ghost">Ghost</button>
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-primary btn-sm mr-2">Small</button>
+                    <button class="btn btn-primary">Default</button>
+                    <button class="btn btn-primary btn-lg ml-2">Large</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forms -->
+        <div class="demo-section">
+            <h2 class="demo-title">Enhanced Form Components</h2>
+            <div class="showcase-grid">
+                <div class="component-demo">
+                    <div class="form-showcase">
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control" placeholder="Enter your email" value="user@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" placeholder="Enter password">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Country</label>
+                            <select class="form-control form-select">
+                                <option>United States</option>
+                                <option>Canada</option>
+                                <option>United Kingdom</option>
+                            </select>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" checked>
+                            <label class="form-check-label">Remember me</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="component-demo">
+                    <h3 class="mb-4">Status Indicators</h3>
+                    <div class="space-y-3">
+                        <div class="alert alert-success">Success message with proper styling</div>
+                        <div class="alert alert-warning">Warning alert for user attention</div>
+                        <div class="alert alert-error">Error message with clear visibility</div>
+                        <div class="alert alert-info">Information alert for guidance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards -->
+        <div class="demo-section">
+            <h2 class="demo-title">Financial Summary Cards</h2>
+            <div class="card-showcase">
+                <div class="sample-card" style="position: relative;">
+                    <div class="card-title text-xs font-semibold text-muted uppercase tracking-wide mb-2">Total Revenue</div>
+                    <div class="text-3xl font-bold text-primary mb-1">$45,250.00</div>
+                    <div class="text-sm text-success font-medium">+12.5% from last month</div>
+                </div>
+                <div class="sample-card" style="position: relative;">
+                    <div class="card-title text-xs font-semibold text-muted uppercase tracking-wide mb-2">Outstanding</div>
+                    <div class="text-3xl font-bold text-primary mb-1">$8,750.00</div>
+                    <div class="text-sm text-warning font-medium">-5.2% from last month</div>
+                </div>
+                <div class="sample-card" style="position: relative;">
+                    <div class="card-title text-xs font-semibold text-muted uppercase tracking-wide mb-2">Total Clients</div>
+                    <div class="text-3xl font-bold text-primary mb-1">156</div>
+                    <div class="text-sm text-success font-medium">+8 new this month</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Preview -->
+        <div class="demo-section">
+            <h2 class="demo-title">Enhanced Data Tables</h2>
+            <div class="component-demo">
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Client Name</th>
+                                <th>Amount</th>
+                                <th>Currency</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ABC Corporation</td>
+                                <td>$5,250.00</td>
+                                <td>USD</td>
+                                <td><span class="status-indicator status-paid">PAID</span></td>
+                                <td>
+                                    <button class="btn btn-icon btn-primary mr-1">
+                                        <svg fill="currentColor" viewBox="0 0 20 20" width="16" height="16">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="btn btn-icon btn-success">
+                                        <svg fill="currentColor" viewBox="0 0 20 20" width="16" height="16">
+                                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>XYZ Ltd</td>
+                                <td>€3,750.00</td>
+                                <td>EUR</td>
+                                <td><span class="status-indicator status-partially-paid">PARTIAL</span></td>
+                                <td>
+                                    <button class="btn btn-icon btn-primary mr-1">
+                                        <svg fill="currentColor" viewBox="0 0 20 20" width="16" height="16">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="btn btn-icon btn-warning">
+                                        <svg fill="currentColor" viewBox="0 0 20 20" width="16" height="16">
+                                            <path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"></path>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center py-8 text-muted">
+            <p class="font-semibold">🎉 Feza Logistics UX Transformation Complete</p>
+            <p class="mt-2">Enterprise-grade design system with 100% functional compatibility</p>
+            <p class="mt-1 text-sm">Modern • Professional • Accessible • Responsive</p>
+        </div>
+    </div>
+</body>
+</html>
