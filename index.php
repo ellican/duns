@@ -29,6 +29,7 @@ $initials = strtoupper(substr($first_name, 0, 2));
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/design-system.css">
     <link rel="stylesheet" href="assets/css/application.css">
+    <link rel="stylesheet" href="assets/css/ai-chat.css">
     
     <style>
         /* Additional styles specific to dashboard that extend the design system */
@@ -885,6 +886,9 @@ $(document).ready(function() {
     setInterval(fetchForexRates, 1000 * 60 * 15);
 });
 </script>
+
+<!-- AI Chat Assistant -->
+<script src="assets/js/ai-chat.js"></script>
 
 </body>
 </html>

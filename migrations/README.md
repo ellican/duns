@@ -16,6 +16,9 @@ mysql -u your_username -p your_database_name < 002_add_tin_column.sql
 
 # Apply migration 003
 mysql -u your_username -p your_database_name < 003_create_login_attempts_table.sql
+
+# Apply migration 004
+mysql -u your_username -p your_database_name < 004_create_ai_chat_logs_table.sql
 ```
 
 ### Using phpMyAdmin or Similar Tools
@@ -40,6 +43,12 @@ mysql -u your_username -p your_database_name < 003_create_login_attempts_table.s
 - **Purpose**: Creates a new table to track login attempts for security monitoring
 - **Features**: Stores device, IP address, location, and country code for each login
 - **Foreign Key**: Links to the `users` table via `user_id`
+
+### 004_create_ai_chat_logs_table.sql
+- **Purpose**: Creates a new table to log all AI assistant interactions for security and auditing
+- **Features**: Tracks user queries, AI responses, SQL queries executed, and execution metrics
+- **Foreign Key**: Links to the `users` table via `user_id`
+- **Indexes**: Optimized for session-based queries and user history lookups
 
 ## Important Notes
 
@@ -67,6 +76,11 @@ ALTER TABLE `clients` DROP COLUMN `TIN`;
 ### Rollback 003
 ```sql
 DROP TABLE IF EXISTS `login_attempts`;
+```
+
+### Rollback 004
+```sql
+DROP TABLE IF EXISTS `ai_chat_logs`;
 ```
 
 ## Support
