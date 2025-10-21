@@ -218,12 +218,16 @@ class AIChatWidget {
         // Show typing indicator
         this.showTypingIndicator();
         
-        // Disable send button
+        // Disable send button and input
         const sendBtn = document.getElementById('aiChatSend');
         sendBtn.disabled = true;
+        input.disabled = true;
         
         try {
-            // Send to backend
+            // Send to backend with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+            
             const response = await fetch('ai_assistant.php', {
                 method: 'POST',
                 headers: {
@@ -232,8 +236,11 @@ class AIChatWidget {
                 body: JSON.stringify({
                     query: message,
                     session_id: this.sessionId
-                })
+                }),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             const data = await response.json();
             
@@ -241,21 +248,32 @@ class AIChatWidget {
             this.hideTypingIndicator();
             
             if (data.success) {
-                // Add AI response
+                // Add AI response (already includes branding footer from backend)
                 this.addMessage('assistant', data.response, data.sql);
             } else {
-                // Show error
-                const errorMsg = data.user_message || data.error || 'Something went wrong. Please try again.';
-                this.addMessage('assistant', errorMsg, null, true);
+                // Show error message (already includes branding footer from backend)
+                const errorMsg = data.response || data.error || 'Something went wrong. Please try again.';
+                this.addMessage('assistant', errorMsg, null, false);
+                console.error('AI Assistant Error:', data.error);
             }
             
         } catch (error) {
             console.error('Error sending message:', error);
             this.hideTypingIndicator();
-            this.addMessage('assistant', 'Sorry, I\'m having trouble connecting. Please try again later.', null, true);
+            
+            let errorMessage = 'Sorry, I\'m having trouble connecting. Please try again later.';
+            if (error.name === 'AbortError') {
+                errorMessage = 'The request timed out. Please try again with a simpler question.';
+            }
+            
+            // Add branding footer to error message
+            errorMessage += '<br><br><p>All rights reserved by Mr. Joseph</p>';
+            
+            this.addMessage('assistant', errorMessage, null, true);
         } finally {
-            // Re-enable send button
+            // Re-enable send button and input
             sendBtn.disabled = false;
+            input.disabled = false;
             input.focus();
         }
     }
@@ -267,8 +285,8 @@ class AIChatWidget {
         const messagesContainer = document.getElementById('aiChatMessages');
         const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        // Format content (convert markdown-style bold to HTML)
-        const formattedContent = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+        // Format content (convert markdown-style bold to HTML and newlines to <br>)
+        let formattedContent = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
         
         // Don't show SQL in UI anymore, only in console
         if (sql) {
