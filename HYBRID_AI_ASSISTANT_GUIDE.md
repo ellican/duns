@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AI assistant now operates in **two intelligent modes**, making it more versatile and ChatGPT-like:
+The AI assistant operates in **two intelligent modes** with fast response times using TinyLlama:
 
 1. **🧠 General Knowledge Mode** - Explains concepts, teaches, and has natural conversations
 2. **🧾 Database Mode** - Strictly uses your company database as the only source of truth
@@ -52,10 +52,10 @@ For these questions, the AI:
 - Seamless transitions between modes
 - No need to specify which mode you want
 
-### ✅ Enhanced Parameters
-- **General Knowledge**: Higher temperature (0.7) for creative, natural responses
-- **Database Queries**: Lower temperature (0.1) for precise SQL generation
-- Optimized token counts for each mode
+### ✅ Enhanced Parameters (Optimized for TinyLlama)
+- **General Knowledge**: Moderate temperature (0.5) for balanced, natural responses
+- **Database Queries**: Lower temperature (0.5) for precise SQL generation
+- Optimized token counts for tinyllama's context window (300-400 tokens)
 
 ## Examples
 
@@ -169,16 +169,20 @@ All database mode queries are:
 
 ### Configuration
 
-Key parameters in `ai_assistant.php`:
+Key parameters in `ai_assistant.php` (optimized for TinyLlama):
 
 ```php
+// Model Configuration
+define('OLLAMA_MODEL', 'tinyllama');  // Fast, lightweight model
+define('MAX_TOKENS', 400);             // Optimized for tinyllama
+
 // General Knowledge Mode
-'temperature' => 0.7,    // More creative, natural responses
-'num_predict' => 600,    // Longer responses for explanations
+'temperature' => 0.5,    // Balanced responses
+'num_predict' => 300,    // Appropriate length for tinyllama
 
 // Database Mode (SQL Generation)
-'temperature' => 0.1,    // Precise, accurate SQL
-'num_predict' => 200,    // Shorter, focused output
+'temperature' => 0.5,    // Consistent SQL generation
+'num_predict' => 150,    // Shorter, focused output
 ```
 
 ## Quick Start Questions

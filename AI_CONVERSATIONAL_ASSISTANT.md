@@ -21,7 +21,7 @@ This AI assistant behaves like a human financial assistant. It:
 
 ## Technical Details
 
-- **Model**: qwen2.5:7b-instruct (or llama3.1:8b-instruct)
+- **Model**: tinyllama (optimized for fast response times)
 - **Architecture**: Two-stage AI processing
   - Stage 1: Convert question → SQL
   - Stage 2: Convert SQL results → Natural language
@@ -36,22 +36,20 @@ This AI assistant behaves like a human financial assistant. It:
 
 2. Pull the model:
    ```bash
-   ollama pull qwen2.5:7b-instruct
-   # OR
-   ollama pull llama3.1:8b-instruct
+   ollama pull tinyllama
    ```
 
 3. Access the chat from your dashboard (logged-in users only)
 
 ## Model Configuration
 
-Default: `qwen2.5:7b-instruct`
-Fallback: `llama3.1:8b-instruct`
-Light fallback: `tinyllama`
+Default: `tinyllama` (fast response times)
+Alternative: `qwen2.5:7b-instruct` (for high-end systems)
+Alternative: `llama3.1:8b-instruct` (for high-end systems)
 
 Change in `ai_assistant.php`:
 ```php
-define('OLLAMA_MODEL', 'qwen2.5:7b-instruct');
+define('OLLAMA_MODEL', 'tinyllama');
 ```
 
 ## Database Schema
@@ -69,10 +67,10 @@ The AI assistant has access to:
 ## Features
 
 ✅ Responds to every question with natural language
+✅ Fast response times with tinyllama model
 ✅ No generic "I can only retrieve data" messages
 ✅ Actual database data in every response
 ✅ Sounds like talking to a human
-✅ Works with qwen2.5:7b-instruct or llama3.1:8b-instruct
 ✅ Two-stage processing: SQL generation → Natural response
 ✅ Safe, read-only database access
 ✅ All queries logged for audit

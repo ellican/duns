@@ -19,7 +19,7 @@
 - **Two-stage AI architecture:**
   - Stage 1: Convert natural language question → SQL query
   - Stage 2: Convert SQL results → Natural conversational response
-- **Updated model:** Changed from `tinyllama` to `qwen2.5:7b-instruct`
+- **Optimized model:** Using `tinyllama` for fast response times
 - **Removed error message:** The problematic "I can only retrieve and analyze financial data" message is completely gone
 - **Simplified error handling:** Errors now return friendly, actionable messages
 - **Streamlined logging:** Only essential interaction logging remains
@@ -59,19 +59,14 @@ Return conversational response
 
 ## What's Different
 
-### Before:
-- Complex multi-stage processing with fallbacks
-- Long system prompts trying to do everything
-- Generic error messages that didn't help users
-- SQL displayed in UI (confusing for non-technical users)
-- Model: tinyllama (less capable)
-
-### After:
+### Current Implementation:
 - Clean two-stage process: SQL generation → Natural response
-- Focused prompts for each stage
-- Helpful, conversational error messages
+- Focused, concise prompts optimized for tinyllama
+- Helpful, conversational error messages with fallbacks
 - SQL hidden from UI (logged to console)
-- Model: qwen2.5:7b-instruct (more capable)
+- Model: tinyllama (fast and lightweight)
+- Lower token limits (400) for optimal performance
+- Moderate temperature (0.5) for consistent responses
 
 ## Testing the Changes
 
@@ -83,7 +78,7 @@ Return conversational response
 
 2. Pull the required model:
    ```bash
-   ollama pull qwen2.5:7b-instruct
+   ollama pull tinyllama
    ```
 
 ### Manual Testing
@@ -113,23 +108,26 @@ Return conversational response
 ## Success Criteria Met
 
 ✅ Responds to every question with natural language
+✅ Fast response times with optimized tinyllama model
 ✅ No generic "I can only retrieve data" messages
 ✅ Actual database data in every response
 ✅ Sounds like talking to a human
-✅ Works with qwen2.5:7b-instruct
 ✅ Two-stage processing: SQL generation → Natural response
 ✅ Safe, read-only database access
 ✅ All queries logged for audit
 ✅ SQL hidden from UI (debugging in console only)
+✅ Enhanced fallback responses for better error handling
 
-## Model Fallback Options
+## Model Configuration
 
-The system is configured to use `qwen2.5:7b-instruct` by default. If this model is not available, you can change the model in `ai_assistant.php`:
+The system is configured to use `tinyllama` by default for optimal speed. If you need more advanced capabilities, you can change the model in `ai_assistant.php`:
 
 ```php
-define('OLLAMA_MODEL', 'llama3.1:8b-instruct'); // Alternative
+define('OLLAMA_MODEL', 'tinyllama'); // Default - Fast and lightweight
+// OR for high-end systems:
+define('OLLAMA_MODEL', 'qwen2.5:7b-instruct'); // More capable, slower
 // OR
-define('OLLAMA_MODEL', 'tinyllama'); // Lightweight fallback
+define('OLLAMA_MODEL', 'llama3.1:8b-instruct'); // More capable, slower
 ```
 
 ## Code Quality Improvements

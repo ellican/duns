@@ -13,13 +13,13 @@ A comprehensive financial management system for Feza Logistics with AI-powered a
 - 🔍 **Advanced Search**: Filter and search through financial records
 - 📱 **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
 
-### AI-Powered Financial Assistant (NEW!)
+### AI-Powered Financial Assistant
 - 🤖 **Natural Language Queries**: Ask questions in plain English
 - 💬 **Interactive Chat Interface**: Conversational AI assistant
 - 🔒 **Secure & Audited**: All interactions logged for compliance
 - 📊 **Real-time Data**: Query your live database instantly
 - 🎯 **Smart SQL Generation**: Converts questions to safe database queries
-- 🚀 **Fast Responses**: Powered by TinyLlama via Ollama
+- ⚡ **Fast Responses**: Optimized with TinyLlama for quick performance
 
 ## Quick Start
 

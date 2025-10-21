@@ -1,7 +1,7 @@
 <?php
 /**
  * Conversational Financial AI Assistant
- * Uses Ollama with qwen2.5:7b-instruct for natural language database queries
+ * Uses Ollama with tinyllama for natural language database queries
  */
 
 session_start();
@@ -15,8 +15,8 @@ require_once 'db.php';
 
 // Configuration
 define('OLLAMA_API_URL', 'http://localhost:11434/api/generate');
-define('OLLAMA_MODEL', 'qwen2.5:7b-instruct'); // Fallback: llama3.1:8b-instruct or tinyllama
-define('MAX_TOKENS', 800);
+define('OLLAMA_MODEL', 'tinyllama'); // Faster response times, lightweight model
+define('MAX_TOKENS', 400); // Optimized for tinyllama's context window
 
 $request_body = file_get_contents('php://input');
 $data = json_decode($request_body, true);
@@ -43,7 +43,7 @@ try {
     $system_prompt = buildHybridSystemPrompt();
     
     // Stage 1: Get AI response (may be direct answer or SQL request)
-    $ai_response = queryOllama($user_query, $system_prompt, 0.7, 600);
+    $ai_response = queryOllama($user_query, $system_prompt, 0.5, 300);
     
     // Check if AI wants to query database
     if (containsSQLRequest($ai_response)) {
@@ -82,77 +82,66 @@ try {
     }
     
 } catch (Exception $e) {
+    // Provide helpful fallback responses based on error type
+    $fallback_message = "I'm having trouble processing that. Could you rephrase your question?";
+    
+    if (strpos($e->getMessage(), 'unavailable') !== false) {
+        $fallback_message = "The AI service is temporarily unavailable. Please try again in a moment.";
+    } elseif (strpos($e->getMessage(), 'Database') !== false) {
+        $fallback_message = "I couldn't access the data. Please check your question and try again.";
+    } elseif (strpos($e->getMessage(), 'SQL') !== false) {
+        $fallback_message = "I had trouble understanding your request. Try asking in a different way.";
+    }
+    
     echo json_encode([
         'success' => false,
         'error' => $e->getMessage(),
-        'response' => "I'm having trouble processing that. Could you rephrase your question?"
+        'response' => $fallback_message
     ]);
 }
 
 /**
- * Build hybrid system prompt
+ * Build hybrid system prompt (optimized for tinyllama)
  */
 function buildHybridSystemPrompt() {
-    return "You are a smart and friendly financial assistant with two capabilities:
+    return "You are a helpful financial assistant with two modes:
 
-**GENERAL KNOWLEDGE MODE:**
-1. Answer general knowledge questions conversationally, like a human teacher, mentor, or colleague
-2. Explain accounting, finance, economics, or any concept naturally and clearly
-3. Engage in small talk, greetings, and help with learning (like ChatGPT)
-4. Teach concepts, provide examples, and be helpful
-5. Be warm, friendly, and conversational
+**MODE 1 - GENERAL KNOWLEDGE:**
+Answer general questions about finance, accounting, or concepts. Be conversational and helpful.
 
-**DATABASE MODE:**
-When the question is about THIS COMPANY'S data (payments, clients, invoices, transactions, revenue, etc.):
-1. You MUST strictly use the company's database as your only source of truth
-2. DO NOT make up or imagine any data
-3. Convert the question into a safe SQL SELECT query
-4. Output 'SQL:' followed by the query on a new line
-5. The backend will execute it and return results
-6. You will then convert those results into a friendly, natural response
+**MODE 2 - DATABASE:**
+For company data questions (payments, clients, invoices), output 'SQL:' followed by a SELECT query.
+Use the database, never make up data.
 
-**DATABASE SCHEMA:**
-- Table: clients
-  Columns: id, reg_no, client_name, date, Responsible, TIN, service, amount, currency (USD/EUR/RWF), paid_amount, due_amount, status (PAID/PARTIALLY PAID/NOT PAID)
-- Table: users
-  Columns: id, username, first_name, last_name, email
+**SCHEMA:**
+clients: id, reg_no, client_name, date, Responsible, TIN, service, amount, currency, paid_amount, due_amount, status
+users: id, username, first_name, last_name, email
 
 **SQL RULES:**
-- Only SELECT queries allowed
+- Only SELECT
 - Use ORDER BY date DESC LIMIT 1 for 'latest'
-- Use SUM() for 'total' or 'how much'
-- Use COUNT() for 'how many'
-- Use ORDER BY ... DESC LIMIT X for 'top X'
-- Always include LIMIT clause
-
-**RESPONSE STYLE:**
-- For general questions: Answer freely, naturally, like ChatGPT
-- For database questions: Output 'SQL:' then the query
-- Be conversational, warm, and helpful
-- Use natural phrasing, not robotic language
-- Format numbers with currency symbols
+- Use SUM() for totals
+- Use COUNT() for counts
+- Always include LIMIT
 
 **EXAMPLES:**
 
-General Knowledge:
-User: What is gross profit?
-Assistant: Gross profit is the amount a business earns after deducting the direct costs of producing goods or services. It shows how efficiently a company produces and sells its products. For example, if you sell a product for \$100 and it costs \$60 to make, your gross profit is \$40.
+General:
+Q: What is gross profit?
+A: Gross profit is revenue minus direct costs. If you sell for \$100 and costs are \$60, gross profit is \$40.
 
-User: Can you explain what invoicing means?
-Assistant: Of course! Invoicing is the process of sending a bill to a customer for goods or services provided. An invoice includes details like what was sold, the quantity, price, and when payment is due. It's essential for tracking sales and getting paid on time.
+Q: Hi!
+A: Hello! I can help with your financial data or explain concepts. What would you like to know?
 
-User: Hi!
-Assistant: Hello! I'm your financial assistant. How can I help you today? You can ask me about your company's financial data, or I can explain financial concepts if you'd like to learn something new.
+Database:
+Q: Who is the latest person paid?
+A: SQL: SELECT client_name FROM clients WHERE status = 'PAID' ORDER BY date DESC LIMIT 1
 
-Database Questions:
-User: Who is the latest person paid?
-Assistant: SQL: SELECT client_name FROM clients WHERE status = 'PAID' ORDER BY date DESC LIMIT 1
+Q: How much revenue last week?
+A: SQL: SELECT SUM(paid_amount) as total FROM clients WHERE date >= DATE_SUB(NOW(), INTERVAL 1 WEEK)
 
-User: How much revenue did we make last week?
-Assistant: SQL: SELECT SUM(paid_amount) as total FROM clients WHERE date >= DATE_SUB(NOW(), INTERVAL 1 WEEK)
-
-User: List top 5 clients by payment
-Assistant: SQL: SELECT client_name, SUM(paid_amount) as total FROM clients GROUP BY client_name ORDER BY total DESC LIMIT 5";
+Q: Top 5 clients
+A: SQL: SELECT client_name, SUM(paid_amount) as total FROM clients GROUP BY client_name ORDER BY total DESC LIMIT 5";
 }
 
 /**
@@ -214,9 +203,9 @@ function validateAndCleanSQL($sql) {
 }
 
 /**
- * Query Ollama with custom parameters
+ * Query Ollama with custom parameters (optimized for tinyllama)
  */
-function queryOllama($question, $system_prompt, $temperature = 0.7, $num_predict = 600) {
+function queryOllama($question, $system_prompt, $temperature = 0.5, $num_predict = 300) {
     $payload = [
         'model' => OLLAMA_MODEL,
         'prompt' => $system_prompt . "\n\nUser: " . $question . "\n\nAssistant:",
@@ -224,7 +213,8 @@ function queryOllama($question, $system_prompt, $temperature = 0.7, $num_predict
         'options' => [
             'num_predict' => $num_predict,
             'temperature' => $temperature,
-            'top_p' => 0.9
+            'top_p' => 0.9,
+            'top_k' => 40
         ]
     ];
     
@@ -232,48 +222,39 @@ function queryOllama($question, $system_prompt, $temperature = 0.7, $num_predict
 }
 
 /**
- * Generate natural conversational response from SQL results
+ * Generate natural conversational response from SQL results (optimized for tinyllama)
  */
 function generateNaturalResponseFromResults($question, $results) {
     if (empty($results)) {
-        return "I couldn't find any data for that. Could you try asking something else?";
+        return "I couldn't find any data for that. Please try rephrasing your question.";
     }
     
-    $system_prompt = "You are a friendly, professional financial assistant.
-
-Your task: Convert the SQL query results into a natural, conversational response.
-
-RESPONSE STYLE:
-- Sound like a helpful human, not a robot
-- Be concise but warm
-- Use natural phrasing
-- Include numbers with proper formatting
-- Don't mention SQL or technical details
+    $system_prompt = "Convert SQL results to natural language. Be concise and friendly.
 
 EXAMPLES:
-Q: Who is the latest person paid?
-Results: [{\"client_name\": \"John Doe\"}]
-Response: The latest person who was paid is John Doe.
+Q: Latest person paid?
+Data: [{\"client_name\": \"John Doe\"}]
+A: The latest person paid is John Doe.
 
-Q: How much did we pay last week?
-Results: [{\"total\": \"3400000\"}]
-Response: Last week, we paid a total of 3,400,000 RWF.
+Q: Total last week?
+Data: [{\"total\": \"3400000\"}]
+A: Last week's total: 3,400,000 RWF.
 
-Q: List top 5 clients
-Results: [{\"client_name\": \"John\"}, {\"client_name\": \"Mary\"}, ...]
-Response: Here are our top 5 clients: John, Mary, Felix, Kane, and Alice.
+Q: Top clients
+Data: [{\"client_name\": \"John\"}, {\"client_name\": \"Mary\"}]
+A: Top clients: John, Mary.
 
-Now convert these results:";
+Convert:";
     
     $results_json = json_encode($results, JSON_PRETTY_PRINT);
     
     $payload = [
         'model' => OLLAMA_MODEL,
-        'prompt' => $system_prompt . "\n\nUser Question: " . $question . "\n\nSQL Results:\n" . $results_json . "\n\nNatural Response:",
+        'prompt' => $system_prompt . "\nQ: " . $question . "\nData: " . $results_json . "\nA:",
         'stream' => false,
         'options' => [
-            'num_predict' => MAX_TOKENS,
-            'temperature' => 0.7,
+            'num_predict' => 150,
+            'temperature' => 0.5,
             'top_p' => 0.9
         ]
     ];
