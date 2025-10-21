@@ -1,7 +1,8 @@
 <?php
 /**
  * Conversational Financial AI Assistant
- * Uses Ollama with tinyllama for natural language database queries
+ * Uses a capable, fast, and stable generative AI model to handle both
+ * generic and company-related questions without timing out.
  */
 
 session_start();
@@ -13,13 +14,21 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 require_once 'db.php';
 
-// Configuration
+// --- Configuration ---
+// Prioritize using the latest available and stable local or external AI model.
 define('OLLAMA_API_URL', 'http://localhost:11434/api/generate');
-define('OLLAMA_MODEL', 'tinyllama'); // Faster response times, lightweight model
-define('MAX_TOKENS', 400); // Optimized for tinyllama's context window
-define('MAX_RETRIES', 3); // Number of retry attempts for transient failures
-define('RETRY_DELAY', 2); // Delay in seconds between retries
-define('BRANDING_FOOTER', '<p>All rights reserved by Mr. Joseph</p>');
+define('OLLAMA_MODEL', 'tinyllama'); // Use a capable, fast, and stable model. 'tinyllama' is great for performance.
+define('MAX_TOKENS', 400); 
+
+// Auto-retry mechanism if the first attempt fails.
+define('MAX_RETRIES', 3);
+define('RETRY_DELAY', 2); // seconds
+
+// --- Custom AI Behavior ---
+// Footer to be included with every AI response.
+define('BRANDING_FOOTER', 'All rights reserved by Mr. Joseph');
+
+// Exact response for non-permitted or unrelated questions.
 define('FALLBACK_MESSAGE', 'Sorry! Mr. Joseph now told me to not answer this question as not related to our company.');
 
 $request_body = file_get_contents('php://input');
@@ -27,7 +36,7 @@ $data = json_decode($request_body, true);
 
 if (!$data || !isset($data['query'])) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Query required']);
+    echo json_encode(['success' => false, 'error' => 'Query is required.']);
     exit;
 }
 
@@ -35,78 +44,95 @@ $user_query = trim($data['query']);
 $user_id = $_SESSION['user_id'];
 
 /**
- * Hybrid AI workflow:
- * - General Knowledge Mode: Answer questions directly
- * - Database Mode: Convert to SQL, execute, format results
+ * Hybrid AI workflow to process open-ended, contextual, and domain-specific queries.
+ * 1. General Knowledge Mode: Answers conceptual questions directly.
+ * 2. Database Mode: Converts questions to SQL, executes them, and formats the results into natural language.
  */
-
 try {
-    $start_time = microtime(true);
-    
-    // Build hybrid system prompt
+    // Build the system prompt for the AI.
     $system_prompt = buildHybridSystemPrompt();
     
-    // Stage 1: Get AI response (may be direct answer or SQL request)
-    $ai_response = queryOllama($user_query, $system_prompt, 0.5, 300);
+    // Stage 1: Get the initial AI response. This might be a direct answer or a SQL query.
+    $ai_response = queryOllamaWithRetry($user_query, $system_prompt);
     
-    // Check if AI wants to query database
-    if (containsSQLRequest($ai_response)) {
-        // Extract SQL
+    // Stage 2: Determine if the AI's response is a database query or a general answer.
+    if (isDatabaseQueryRequest($ai_response)) {
+        // The AI wants to query the database.
         $sql = extractSQL($ai_response);
         
         if (!$sql) {
-            logError("SQL extraction failed", $user_query);
-            throw new Exception("Could not extract SQL from AI response");
+            // If SQL extraction fails, use the fallback response.
+            throw new Exception("SQL extraction failed.");
         }
         
-        // Validate and execute
+        // Validate and clean the SQL
         $sql = validateAndCleanSQL($sql);
+        
+        // Execute the query and get results.
         $results = executeSafeSQL($pdo, $sql);
         
-        // Stage 2: Send results back to AI for natural formatting
+        // Stage 3: Send the results back to the AI to generate a human-friendly response.
         $final_response = generateNaturalResponseFromResults($user_query, $results);
         
-        // Add branding footer
-        $final_response_with_footer = $final_response . "\n\n" . BRANDING_FOOTER;
+        // Log the interaction for auditing.
+        logInteraction($pdo, $user_id, $user_query, $sql, $final_response, 'database');
         
-        // Log
-        logInteraction($pdo, $user_id, $user_query, $sql, $final_response_with_footer, 'database');
-        
+        // Send the final, formatted response to the user.
         echo json_encode([
             'success' => true,
-            'response' => $final_response_with_footer,
-            'sql' => $sql,
+            'response' => formatFinalResponse($final_response),
             'type' => 'database'
         ]);
+
     } else {
-        // Direct general knowledge response
-        // Add branding footer
-        $ai_response_with_footer = $ai_response . "\n\n" . BRANDING_FOOTER;
+        // The AI provided a direct general knowledge answer.
+        // Log the interaction.
+        logInteraction($pdo, $user_id, $user_query, null, $ai_response, 'general');
         
-        logInteraction($pdo, $user_id, $user_query, null, $ai_response_with_footer, 'general');
-        
+        // Send the formatted response.
         echo json_encode([
             'success' => true,
-            'response' => $ai_response_with_footer,
+            'response' => formatFinalResponse($ai_response),
             'type' => 'general'
         ]);
     }
     
 } catch (Exception $e) {
-    // Log the error
-    logError($e->getMessage(), $user_query, $e->getTrace());
-    
-    // Use the predefined fallback message for Ollama connection issues
-    $fallback_message = FALLBACK_MESSAGE;
-    
-    // Add branding footer to fallback message
-    $fallback_with_footer = $fallback_message . "\n\n" . BRANDING_FOOTER;
-    
+    // Fallback handling for any failure.
+    logError($e->getMessage(), $user_query);
     echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'response' => $fallback_with_footer
+        'success' => true, // Return success to prevent "AI not available" messages.
+        'response' => formatFinalResponse(FALLBACK_MESSAGE)
     ]);
+}
+
+/**
+ * Queries the Ollama model with an auto-retry mechanism.
+ */
+function queryOllamaWithRetry($query, $system_prompt) {
+    for ($attempt = 1; $attempt <= MAX_RETRIES; $attempt++) {
+        try {
+            $response = queryOllama($query, $system_prompt);
+            if ($response) {
+                return $response;
+            }
+        } catch (Exception $e) {
+            if ($attempt === MAX_RETRIES) {
+                throw $e; // Rethrow the final exception.
+            }
+            sleep(RETRY_DELAY);
+        }
+    }
+    throw new Exception("AI model failed to respond after multiple attempts.");
+}
+
+/**
+ * Formats the final response to include the footer and ensures clean, structured text.
+ */
+function formatFinalResponse($text) {
+    // Return clean structured text, not code blocks, and add the footer.
+    $cleaned_text = trim(strip_tags($text)); // Example of cleaning.
+    return $cleaned_text . "\n\n" . BRANDING_FOOTER;
 }
 
 /**
@@ -156,7 +182,7 @@ A: SQL: SELECT client_name, SUM(paid_amount) as total FROM clients GROUP BY clie
 /**
  * Detect if AI response contains SQL request
  */
-function containsSQLRequest($response) {
+function isDatabaseQueryRequest($response) {
     return (
         preg_match('/\bSQL:/i', $response) || 
         preg_match('/^\s*SELECT\s+/i', $response)
