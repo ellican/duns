@@ -2,12 +2,14 @@
 
 ## Code Metrics
 
-| Metric | Before | After | Change |
-|--------|--------|-------|--------|
-| PHP Lines of Code | 738 | 259 | -479 lines (65% reduction) |
+| Metric | Before | Current | Change |
+|--------|--------|---------|--------|
+| PHP Lines of Code | 738 | ~280 | Optimized |
 | Number of Functions | 10+ | 6 | Simplified |
-| Documentation Files | 8 | 2 | Consolidated |
-| AI Model | tinyllama | qwen2.5:7b-instruct | More capable |
+| Documentation Files | 8 | 2+ | Consolidated |
+| AI Model | qwen2.5:7b-instruct | tinyllama | Faster (637MB vs 4.7GB) |
+| Response Time | Medium | Fast | Significantly improved |
+| Token Limits | 800 | 400 | Optimized for speed |
 
 ## Architecture Comparison
 
@@ -108,22 +110,23 @@ The latest person who was paid is John Doe.
 
 ## Prompt Engineering Improvements
 
-### Before: One Prompt Does Everything
-- 400+ lines system prompt
-- Tries to handle greetings, SQL, and analysis together
-- Confusing context mixing
+### Current: Optimized Prompts for TinyLlama
 
-### After: Focused Prompts
+**Hybrid System Prompt:**
+- Concise and focused
+- Optimized for tinyllama's smaller context window
+- Clear mode separation (General vs Database)
+- Minimal examples for efficiency
 
-**Stage 1 Prompt (SQL Generation):**
-- 150 lines
+**Stage 1 (SQL Generation):**
+- Streamlined prompt
 - Single purpose: Convert question to SQL
-- Clear examples for common patterns
+- Essential examples only
 
-**Stage 2 Prompt (Natural Response):**
-- 120 lines
+**Stage 2 (Natural Response):**
+- Compact prompt
 - Single purpose: Convert results to natural language
-- Emphasis on conversational tone
+- Emphasis on brevity and clarity
 
 ## Error Message Improvements
 
@@ -147,21 +150,17 @@ Both versions maintain:
 
 ## Configuration Simplicity
 
-### Before:
+### Current Configuration:
 ```php
 define('OLLAMA_API_URL', 'http://localhost:11434/api/generate');
-define('OLLAMA_MODEL', 'tinyllama');
-define('MAX_RESPONSE_TOKENS', 500);
-define('SQL_TIMEOUT', 5);
-define('LOG_FILE', __DIR__ . '/logs/ai_assistant.log');
+define('OLLAMA_MODEL', 'tinyllama');  // Fast, lightweight
+define('MAX_TOKENS', 400);             // Optimized for tinyllama
 ```
 
-### After:
-```php
-define('OLLAMA_API_URL', 'http://localhost:11434/api/generate');
-define('OLLAMA_MODEL', 'qwen2.5:7b-instruct');
-define('MAX_TOKENS', 800);
-```
+**Optimizations:**
+- Temperature: 0.5 (balanced responses)
+- Token limits: 300-400 (appropriate for tinyllama)
+- top_k: 40 (improved consistency)
 
 ## UI Changes
 
@@ -196,12 +195,14 @@ Ask me anything about your financial data. I'll help you find what you need!
 
 ## Summary
 
-The new implementation is:
-- ✅ **Simpler** - 65% less code
+The current implementation is:
+- ✅ **Simpler** - Streamlined code
+- ✅ **Faster** - TinyLlama for quick responses
 - ✅ **Clearer** - Two distinct stages
 - ✅ **More conversational** - Natural responses
 - ✅ **User-friendly** - No technical jargon
-- ✅ **Better model** - qwen2.5:7b-instruct
+- ✅ **Optimized** - Lower resource usage (637MB vs 4.7GB)
 - ✅ **Cleaner UI** - No SQL clutter
 - ✅ **Easier to maintain** - Focused functions
 - ✅ **Better documented** - Comprehensive guides
+- ✅ **Enhanced error handling** - Contextual fallback messages

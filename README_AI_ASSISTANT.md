@@ -13,7 +13,7 @@ The AI **automatically detects** which mode to use based on your question!
 
 ### Requirements
 - Ollama running on localhost:11434
-- Model: qwen2.5:7b-instruct (or llama3.1:8b-instruct)
+- Model: tinyllama (default for fast response times)
 - PHP 7.4+
 - MySQL/MariaDB database
 
@@ -26,7 +26,7 @@ The AI **automatically detects** which mode to use based on your question!
 
 2. **Pull the AI model:**
    ```bash
-   ollama pull qwen2.5:7b-instruct
+   ollama pull tinyllama
    ```
 
 3. **Access the assistant:**
@@ -151,11 +151,11 @@ The assistant responds in **natural, conversational language**, like talking to 
 Edit `ai_assistant.php` to customize:
 
 ```php
-// Change AI model
-define('OLLAMA_MODEL', 'qwen2.5:7b-instruct'); // or llama3.1:8b-instruct
+// Change AI model (default is tinyllama for speed)
+define('OLLAMA_MODEL', 'tinyllama'); // Alternative: qwen2.5:7b-instruct
 
 // Adjust response length
-define('MAX_TOKENS', 800);
+define('MAX_TOKENS', 400);
 
 // Change Ollama URL if needed
 define('OLLAMA_API_URL', 'http://localhost:11434/api/generate');
@@ -174,15 +174,15 @@ ollama serve
 **Problem:** Model not downloaded
 **Solution:**
 ```bash
-ollama pull qwen2.5:7b-instruct
+ollama pull tinyllama
 ```
 
 ### Slow responses
-**Problem:** Model is too large for your system
-**Solution:** Use a smaller model:
-```php
-define('OLLAMA_MODEL', 'tinyllama'); // Lighter weight
-```
+**Problem:** Model may be too large for your system
+**Solution:** Tinyllama is already the fastest option (637MB). For even better performance, ensure:
+- Ollama has sufficient RAM allocated
+- No other resource-intensive processes are running
+- Consider upgrading hardware if issues persist
 
 ### "Database query failed"
 **Problem:** SQL syntax error or invalid table/column reference
@@ -226,9 +226,9 @@ The AI has access to:
 
 | Model | Size | Speed | Quality | Recommended For |
 |-------|------|-------|---------|-----------------|
-| qwen2.5:7b-instruct | 4.7GB | Medium | Excellent | Production (default) |
-| llama3.1:8b-instruct | 4.7GB | Medium | Excellent | Alternative |
-| tinyllama | 637MB | Fast | Good | Limited resources |
+| tinyllama | 637MB | Fast | Good | Production (default) - Best speed |
+| qwen2.5:7b-instruct | 4.7GB | Medium | Excellent | High-end systems |
+| llama3.1:8b-instruct | 4.7GB | Medium | Excellent | High-end systems |
 
 ## Performance Tips
 
@@ -275,7 +275,7 @@ After modifying the code:
 
 Built with:
 - **Ollama** - Local AI inference
-- **Qwen 2.5** - Language model by Alibaba Cloud
+- **TinyLlama** - Lightweight, fast language model
 - **PHP** - Backend processing
 - **JavaScript** - Frontend chat interface
 
